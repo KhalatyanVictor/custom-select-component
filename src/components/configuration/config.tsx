@@ -1,6 +1,10 @@
-import React, { useEffect, useState } from "react";
+interface ConfigProps {
+  setChips: React.Dispatch<React.SetStateAction<boolean>>;
+  setMultiple: React.Dispatch<React.SetStateAction<boolean>>;
+  setClearable: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
-const Config = ({ setChips, setMultiple, setClearable }) => {
+const Config = ({ setChips, setMultiple, setClearable }: ConfigProps) => {
   return (
     <div className="flex flex-col justify-evenly border rounded-xl w-60 h-max mx-auto my-10">
       <p className="mx-auto my-5 text-2xl">Configuration</p>

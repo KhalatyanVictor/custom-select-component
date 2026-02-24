@@ -3,17 +3,22 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Config from "../configuration/config";
 
+interface Option {
+  value: number;
+  label: string;
+}
+
 const Select = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputVal, setInputVal] = useState("");
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState<Option[]>([]);
   const [visibleCount, setVisibleCount] = useState(20);
   const [chips, setChips] = useState(false);
   const [multiple, setMultiple] = useState(false);
   const [clearable, setClearable] = useState(false);
   const [nonMultipleSelection, setNonMultipleSelection] = useState("");
 
-  const optionsRef = useRef(null);
+  const optionsRef = useRef<HTMLDivElement | null>(null);
 
   const allOptions = Array.from({ length: 100 }, (_, i) => ({
     value: i + 1,
@@ -26,7 +31,7 @@ const Select = () => {
 
   const visibleOptions = filteredOptions.slice(0, visibleCount);
 
-  const handleScroll = (e) => {
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const bottom =
       e.currentTarget.scrollHeight - e.currentTarget.scrollTop ===
       e.currentTarget.clientHeight;
@@ -34,8 +39,11 @@ const Select = () => {
   };
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (optionsRef.current && !optionsRef.current.contains(e.target)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        optionsRef.current &&
+        !optionsRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -60,9 +68,9 @@ const Select = () => {
     );
   }, [chips, multiple, clearable, nonMultipleSelection]);
 
-  const handleSelect = (option) => {
+  const handleSelect = (option: Option) => {
     if (multiple) {
-      if (!selected.some((s) => s.value === option.value)) {
+      if (!selected.some((s: Option) => s.value === option.value)) {
         setSelected([...selected, option]);
       }
       setInputVal("");
@@ -73,7 +81,7 @@ const Select = () => {
     }
   };
 
-  const autoComplete = (e) => {
+  const autoComplete = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputVal(val);
 
@@ -84,7 +92,7 @@ const Select = () => {
     if (match) {
       if (multiple) {
         setTimeout(() => {
-          if (!selected.some((s) => s.value === match.value)) {
+          if (!selected.some((s: Option) => s.value === match.value)) {
             setSelected([...selected, match]);
           }
           setInputVal("");
@@ -93,7 +101,7 @@ const Select = () => {
         setTimeout(() => {
           setNonMultipleSelection(match.label);
           setIsOpen(false);
-          setInputVal(""); 
+          setInputVal("");
         }, 1000);
       }
     }
@@ -102,7 +110,7 @@ const Select = () => {
   const inputDisplayValue = chips
     ? inputVal
     : multiple
-      ? inputVal || selected.map((o) => o.label).join(", ")
+      ? inputVal || selected.map((o: Option) => o.label).join(", ")
       : inputVal || nonMultipleSelection;
 
   return (
@@ -145,7 +153,7 @@ const Select = () => {
       <div className="flex flex-wrap justify-center w-60 mx-auto">
         {chips
           ? multiple
-            ? selected.map((item) => (
+            ? selected.map((item: Option) => (
                 <div
                   key={item.value}
                   className="bg-black text-white rounded-full px-3 py-1 m-1 flex items-center"
@@ -155,7 +163,9 @@ const Select = () => {
                     <button
                       onClick={() =>
                         setSelected(
-                          selected.filter((s) => s.value !== item.value),
+                          selected.filter(
+                            (s: Option) => s.value !== item.value,
+                          ),
                         )
                       }
                       className="ml-2 font-bold cursor-pointer"
@@ -179,14 +189,16 @@ const Select = () => {
                 </div>
               )
           : multiple
-            ? selected.map((item) => (
+            ? selected.map((item: Option) => (
                 <div key={item.value} className="ml-2">
                   {item.label}
                   {clearable && (
                     <button
                       onClick={() =>
                         setSelected(
-                          selected.filter((s) => s.value !== item.value),
+                          selected.filter(
+                            (s: Option) => s.value !== item.value,
+                          ),
                         )
                       }
                       className="font-bold cursor-pointer ml-1"
