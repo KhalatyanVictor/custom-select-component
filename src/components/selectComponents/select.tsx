@@ -19,6 +19,19 @@ const Select = () => {
   const [nonMultipleSelection, setNonMultipleSelection] = useState("");
 
   const optionsRef = useRef<HTMLDivElement | null>(null);
+  const inputContainerRef = useRef<HTMLDivElement | null>(null);
+  const [dropdownWidth, setDropdownWidth] = useState(0);
+
+  useEffect(() => {
+    const updateWidth = () => { 
+      if (inputContainerRef.current) {
+        setDropdownWidth(inputContainerRef.current.offsetWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [selected, inputVal, chips, nonMultipleSelection]);
 
   const allOptions = Array.from({ length: 100 }, (_, i) => ({
     value: i + 1,
@@ -55,22 +68,12 @@ const Select = () => {
     setVisibleCount(20);
   }, [inputVal, isOpen]);
 
-  useEffect(() => {
-    console.log(
-      "chips:",
-      chips,
-      "multiple:",
-      multiple,
-      "clearable:",
-      clearable,
-      "nonMultiple:",
-      nonMultipleSelection,
-    );
-  }, [chips, multiple, clearable, nonMultipleSelection]);
-
   const handleSelect = (option: Option) => {
+    const exists = selected.some((s: Option) => s.value === option.value);
     if (multiple) {
-      if (!selected.some((s: Option) => s.value === option.value)) {
+      if (exists) {
+        setSelected(selected.filter((s) => s.value !== option.value));
+      } else {
         setSelected([...selected, option]);
       }
       setInputVal("");
@@ -81,146 +84,95 @@ const Select = () => {
     }
   };
 
-  const autoComplete = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInputVal(val);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputVal(e.target.value);
+  };
 
-    const match = allOptions.find(
-      (option) => option.label.toLowerCase() === val.toLowerCase(),
-    );
-
-    if (match) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const match = allOptions.find(
+        (option) => option.label.toLowerCase() === inputVal.toLowerCase(),
+      );
+      if (!match) return;
       if (multiple) {
-        setTimeout(() => {
-          if (!selected.some((s: Option) => s.value === match.value)) {
-            setSelected([...selected, match]);
-          }
-          setInputVal("");
-        }, 1000);
+        if (!selected.some((s) => s.value === match.value)) {
+          setSelected([...selected, match]);
+        }
+        setInputVal("");
       } else {
-        setTimeout(() => {
-          setNonMultipleSelection(match.label);
-          setIsOpen(false);
-          setInputVal("");
-        }, 1000);
+        setNonMultipleSelection(match.label);
+        setIsOpen(false);
+        setInputVal("");
       }
     }
   };
 
-  const inputDisplayValue = chips
-    ? inputVal
-    : multiple
-      ? inputVal || selected.map((o: Option) => o.label).join(", ")
-      : inputVal || nonMultipleSelection;
-
   return (
     <div
       ref={optionsRef}
-      className="flex flex-col justify-center my-10 w-max mx-auto"
+      className="flex flex-col justify-center my-10 w-max mx-auto "
     >
-      <div className="mx-auto relative w-60">
-        <input
-          type="text"
-          placeholder="Select..."
-          className="border-2 text-start pl-3 rounded-xl h-10 w-full pr-10 py-2"
-          value={inputDisplayValue}
-          onChange={(e) => autoComplete(e)}
-          onFocus={() => setIsOpen(true)}
-        />
-        <span
-          className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer"
-          onClick={() => setIsOpen(!isOpen)}
+      <div className="mx-auto relative w-max max-w-105 flex">
+        <div
+          className="border-2 rounded-xl min-h-10 w-full px-2 py-1 flex flex-wrap items-center gap-1"
+          ref={inputContainerRef}
         >
-          {!isOpen ? (
-            <Image
-              src="/select-input-down.png"
-              width={20}
-              height={20}
-              alt="selectClick"
-            />
-          ) : (
-            <Image
-              src="/select-input-up.png"
-              width={20}
-              height={20}
-              alt="selectClick"
-              className="cursor-pointer"
-            />
-          )}
-        </span>
-      </div>
-
-      <div className="flex flex-wrap justify-center w-60 mx-auto">
-        {chips
-          ? multiple
-            ? selected.map((item: Option) => (
+          {chips ? (
+            multiple ? (
+              selected.map((item) => (
                 <div
                   key={item.value}
-                  className="bg-black text-white rounded-full px-3 py-1 m-1 flex items-center"
+                  className="bg-black text-white rounded-full px-3 py-1 text-sm flex items-center"
                 >
                   {item.label}
-                  {clearable && (
-                    <button
-                      onClick={() =>
-                        setSelected(
-                          selected.filter(
-                            (s: Option) => s.value !== item.value,
-                          ),
-                        )
-                      }
-                      className="ml-2 font-bold cursor-pointer"
-                    >
-                      ×
-                    </button>
-                  )}
                 </div>
               ))
-            : nonMultipleSelection && (
-                <div className="bg-black text-white rounded-full px-3 py-1 m-1 flex items-center">
-                  {nonMultipleSelection}
-                  {clearable && (
-                    <button
-                      onClick={() => setNonMultipleSelection("")}
-                      className="ml-2 font-bold cursor-pointer"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              )
-          : multiple
-            ? selected.map((item: Option) => (
-                <div key={item.value} className="ml-2">
-                  {item.label}
-                  {clearable && (
-                    <button
-                      onClick={() =>
-                        setSelected(
-                          selected.filter(
-                            (s: Option) => s.value !== item.value,
-                          ),
-                        )
-                      }
-                      className="font-bold cursor-pointer ml-1"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))
-            : nonMultipleSelection && (
-                <div>
-                  {nonMultipleSelection}
-                  {clearable && (
-                    <button
-                      onClick={() => setNonMultipleSelection("")}
-                      className="font-bold cursor-pointer ml-1"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-              )}
+            ) : nonMultipleSelection ? (
+              <div className="bg-black text-white rounded-full px-3 py-1 text-sm flex items-center">
+                {nonMultipleSelection}
+              </div>
+            ) : null
+          ) : multiple ? (
+            selected.map((item) => <div key={item.value}>{item.label},</div>)
+          ) : (
+            <div>{nonMultipleSelection}</div>
+          )}
+          <input
+            type="text"
+            placeholder="Select..."
+            className="flex-1 outline-none min-w-15"
+            value={inputVal}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsOpen(true)}
+          />
+        </div>
+
+        <span
+          className="flex absolute right-8 top-1/2 -translate-y-1/2 cursor-pointer"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <Image
+            src={isOpen ? "/select-input-up.png" : "/select-input-down.png"}
+            width={20}
+            height={20}
+            alt={isOpen ? "close" : "open"}
+          />
+        </span>
+
+        {clearable &&
+          (multiple ? selected.length > 0 : nonMultipleSelection) && (
+            <span
+              className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
+              onClick={() => {
+                setSelected([]);
+                setNonMultipleSelection("");
+                setInputVal("");
+              }}
+            >
+              <Image src="/closed.png" alt="clear" width={18} height={18} />
+            </span>
+          )}
       </div>
 
       {isOpen && (
@@ -228,16 +180,24 @@ const Select = () => {
           className="flex justify-center max-h-70 w-max mx-auto overflow-y-auto border border-black rounded-xl"
           onScroll={handleScroll}
         >
-          <div>
+          <div style={{ width: dropdownWidth }}>
             {visibleOptions.map((option) => (
               <div key={option.value}>
                 <div
                   onClick={() => handleSelect(option)}
-                  className="border text-black bg-zinc-300 h-10 w-60 mx-auto cursor-pointer border-zinc-400"
+                  className="border bg-zinc-300 h-10 mx-auto cursor-pointer border-zinc-400 flex items-center justify-between px-3"
                 >
-                  <div className="flex justify-center my-1.5">
+                  <label htmlFor={`option-${option.value}`}>
                     {option.label}
-                  </div>
+                  </label>
+                  {multiple && (
+                    <input
+                      type="checkbox"
+                      checked={selected.some((s) => s.value === option.value)}
+                      id={`option-${option.value}`}
+                      readOnly
+                    />
+                  )}
                 </div>
               </div>
             ))}
